@@ -1,5 +1,6 @@
 package com.meet.learnpython.ui.slideshow;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +19,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.meet.learnpython.ExpandableListAdapter;
 import com.meet.learnpython.ExpandableListDataPump;
+import com.meet.learnpython.MyAdManager;
 import com.meet.learnpython.R;
 
 import java.util.ArrayList;
@@ -32,14 +34,27 @@ public class SlideshowFragment extends Fragment {
     ExpandableListAdapter expandableListAdapter;
     List expandableListTitle;
     HashMap<String, List<String>> expandableListDetail;
-
+    private MyAdManager adManager;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_slideshow, container, false);
 
         mAdview = (AdView) root.findViewById(R.id.adView);
-        adRequest=new AdRequest.Builder().build();
-        mAdview.loadAd(adRequest);
+
+        adManager = new MyAdManager(getActivity());
+        loadBannerAd();
+
+        if (!adManager.hasPurchasedRemoveAds()) {
+            int paddingInDp = 50;
+            int paddingInPx = dpToPx(getActivity(), paddingInDp);
+            ExpandableListView elt = (ExpandableListView) root.findViewById(R.id.expandableListView);
+            elt.setPadding(0,0,0,paddingInPx);
+        }else{
+            int paddingInDp = 7;
+            int paddingInPx = dpToPx(getActivity(), paddingInDp);
+            ExpandableListView elt = (ExpandableListView) root.findViewById(R.id.expandableListView);
+            elt.setPadding(0,0,0,paddingInPx);
+        }
 
         expandableListView = (ExpandableListView) root.findViewById(R.id.expandableListView);
         expandableListDetail = ExpandableListDataPump.getData();
@@ -72,5 +87,20 @@ public class SlideshowFragment extends Fragment {
             }
         });
         return root;
+    }
+    private void loadBannerAd() {
+        if (!adManager.hasPurchasedRemoveAds()) {
+            // Ads are enabled, load the banner ad
+            adRequest=new AdRequest.Builder().build();
+            mAdview.loadAd(adRequest);
+            mAdview.setVisibility(View.VISIBLE);
+        } else {
+            // Ads are disabled, hide the banner ad
+            mAdview.setVisibility(View.GONE);
+        }
+    }
+    public int dpToPx(Context context, int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }

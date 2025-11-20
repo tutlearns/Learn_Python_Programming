@@ -1,36 +1,78 @@
 package com.meet.learnpython;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
+import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowInsetsController;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.material.appbar.AppBarLayout;
 
 public class Editor extends AppCompatActivity {
     String code,output;
     AdView mAdview,mAdview1;
     AdRequest adRequest;
+    private MyAdManager adManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setupEdgeToEdge();
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         setTitle("Editor");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        mAdview = (AdView)findViewById(R.id.adView);
-        adRequest=new AdRequest.Builder().build();
-        mAdview.loadAd(adRequest);
+        RelativeLayout rootLayout = findViewById(R.id.editor);
+        AppBarLayout appBarLayout = findViewById(R.id.appBar);
 
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(systemBars.left,0,systemBars.right, systemBars.bottom);
+
+            Insets appbarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+            appBarLayout.setPadding(0,appbarInsets.top,0,0);
+
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        mAdview = (AdView) findViewById(R.id.adView);
         mAdview1 = (AdView)findViewById(R.id.adView1);
-        adRequest=new AdRequest.Builder().build();
-        mAdview1.loadAd(adRequest);
+
+        adManager = new MyAdManager(this);
+        loadBannerAd();
+
+        if (!adManager.hasPurchasedRemoveAds()) {
+            int paddingInDp = 50;
+            int paddingInPx = dpToPx(this, paddingInDp);
+            ScrollView sc = (ScrollView) findViewById(R.id.scrollView);
+            sc.setPadding(0,0,0,paddingInPx);
+        }else{
+            int paddingInDp = 7;
+            int paddingInPx = dpToPx(this, paddingInDp);
+            ScrollView sc = (ScrollView) findViewById(R.id.scrollView);
+            sc.setPadding(0,0,0,paddingInPx);
+        }
 
         Intent i = getIntent();
         String str= i.getExtras().getString("key");
@@ -1233,6 +1275,56 @@ public class Editor extends AppCompatActivity {
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+    private void loadBannerAd() {
+        if (!adManager.hasPurchasedRemoveAds()) {
+            // Ads are enabled, load the banner ad
+            adRequest=new AdRequest.Builder().build();
+            mAdview.loadAd(adRequest);
+            mAdview.setVisibility(View.VISIBLE);
+
+            adRequest=new AdRequest.Builder().build();
+            mAdview1.loadAd(adRequest);
+            mAdview1.setVisibility(View.VISIBLE);
+        } else {
+            // Ads are disabled, hide the banner ad
+            mAdview.setVisibility(View.GONE);
+            mAdview1.setVisibility(View.GONE);
+        }
+    }
+    public int dpToPx(Context context, int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+    private void setupEdgeToEdge() {
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightNavigationBars(false);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(false);
+        Window window = getWindow();
+
+        // Set status bar color as per theme
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.setStatusBarColor(getColor(R.color.colorPrimaryDark));
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Prevent Android from forcing white nav background for 3-button navigation
+            window.setNavigationBarContrastEnforced(false);
+
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                // Adjust navigation bar icons (light/dark) based on your theme
+                controller.setSystemBarsAppearance(
+                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                );
+            }
+        } else {
+            // For Android 10 and below → ensure nav bar is edge-to-edge
+            window.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            );
         }
     }
 }

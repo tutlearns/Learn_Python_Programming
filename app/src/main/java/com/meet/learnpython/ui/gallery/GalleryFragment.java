@@ -1,5 +1,6 @@
 package com.meet.learnpython.ui.gallery;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -60,13 +61,27 @@ public class GalleryFragment extends Fragment {
             "Best Score: 0/10",
             "Best Score: 0/10",
     };
+    private MyAdManager adManager;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_gallery, container, false);
 
         mAdview = (AdView) root.findViewById(R.id.adView);
-        adRequest=new AdRequest.Builder().build();
-        mAdview.loadAd(adRequest);
+
+        adManager = new MyAdManager(getActivity());
+        loadBannerAd();
+
+        if (!adManager.hasPurchasedRemoveAds()) {
+            int paddingInDp = 50;
+            int paddingInPx = dpToPx(getActivity(), paddingInDp);
+            GridView gdv = (GridView) root.findViewById(R.id.grid_view_image_text);
+            gdv.setPadding(0,0,0,paddingInPx);
+        }else{
+            int paddingInDp = 7;
+            int paddingInPx = dpToPx(getActivity(), paddingInDp);
+            GridView gdv = (GridView) root.findViewById(R.id.grid_view_image_text);
+            gdv.setPadding(0,0,0,paddingInPx);
+        }
 /*
         listView = (ListView) root.findViewById(R.id.listView);
 
@@ -273,5 +288,20 @@ public class GalleryFragment extends Fragment {
         get_data();
         androidGridView.setAdapter(adapterViewAndroid);
         super.onResume();
+    }
+    private void loadBannerAd() {
+        if (!adManager.hasPurchasedRemoveAds()) {
+            // Ads are enabled, load the banner ad
+            adRequest=new AdRequest.Builder().build();
+            mAdview.loadAd(adRequest);
+            mAdview.setVisibility(View.VISIBLE);
+        } else {
+            // Ads are disabled, hide the banner ad
+            mAdview.setVisibility(View.GONE);
+        }
+    }
+    public int dpToPx(Context context, int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }

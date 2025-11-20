@@ -21,6 +21,10 @@
             android:icon="@drawable/baseline_code"
             android:title="Example" />
         <item
+            android:id="@+id/ad_remove"
+            android:icon="@mipmap/premium"
+            android:title="Remove Ads" />
+        <item
             android:id="@+id/more"
             android:icon="@mipmap/more"
             android:title="More Apps" />

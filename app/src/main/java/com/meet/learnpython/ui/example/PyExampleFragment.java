@@ -1,5 +1,6 @@
 package com.meet.learnpython.ui.example;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -15,6 +16,7 @@ import com.google.android.gms.ads.AdView;
 import com.meet.learnpython.Editor;
 import com.meet.learnpython.ExpandableListAdapter;
 import com.meet.learnpython.ExpandableListData;
+import com.meet.learnpython.MyAdManager;
 import com.meet.learnpython.R;
 
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ public class PyExampleFragment extends Fragment {
     LinkedHashMap<String, List<String>> expandableListDetail;
     AdView mAdview;
     AdRequest adRequest;
+    private MyAdManager adManager;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -36,8 +39,21 @@ public class PyExampleFragment extends Fragment {
         View root = inflater.inflate(R.layout.fragment_py_example, container, false);
 
         mAdview = (AdView) root.findViewById(R.id.adView);
-        adRequest=new AdRequest.Builder().build();
-        mAdview.loadAd(adRequest);
+
+        adManager = new MyAdManager(getActivity());
+        loadBannerAd();
+
+        if (!adManager.hasPurchasedRemoveAds()) {
+            int paddingInDp = 50;
+            int paddingInPx = dpToPx(getActivity(), paddingInDp);
+            ExpandableListView elt = (ExpandableListView) root.findViewById(R.id.expandableListView);
+            elt.setPadding(0,0,0,paddingInPx);
+        }else{
+            int paddingInDp = 7;
+            int paddingInPx = dpToPx(getActivity(), paddingInDp);
+            ExpandableListView elt = (ExpandableListView) root.findViewById(R.id.expandableListView);
+            elt.setPadding(0,0,0,paddingInPx);
+        }
 
         expandableListView = (ExpandableListView) root.findViewById(R.id.expandableListView);
         expandableListDetail = ExpandableListData.getData();
@@ -62,5 +78,20 @@ public class PyExampleFragment extends Fragment {
         });
 
         return root;
+    }
+    private void loadBannerAd() {
+        if (!adManager.hasPurchasedRemoveAds()) {
+            // Ads are enabled, load the banner ad
+            adRequest=new AdRequest.Builder().build();
+            mAdview.loadAd(adRequest);
+            mAdview.setVisibility(View.VISIBLE);
+        } else {
+            // Ads are disabled, hide the banner ad
+            mAdview.setVisibility(View.GONE);
+        }
+    }
+    public int dpToPx(Context context, int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }

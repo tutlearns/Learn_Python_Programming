@@ -46,6 +46,10 @@
         android:label="@string/menu_example"
         tools:layout="@layout/fragment_py_example" />
     <fragment
+        android:id="@+id/ad_remove"
+        android:name="com.meet.learnpython.ui.home.HomeFragment"
+        />
+    <fragment
         android:id="@+id/more"
         android:name="com.meet.learnpython.ui.home.HomeFragment"
         />

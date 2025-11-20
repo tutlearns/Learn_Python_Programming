@@ -8,18 +8,25 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowInsetsController;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.ads.nativetemplates.NativeTemplateStyle;
 import com.google.android.ads.nativetemplates.TemplateView;
@@ -27,12 +34,10 @@ import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.material.appbar.AppBarLayout;
 
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class py_quiz_1 extends AppCompatActivity {
     AdView mAdview;
@@ -75,30 +80,68 @@ public class py_quiz_1 extends AppCompatActivity {
     Vibrator vibe;
     public static int marks=0,correct=0,wrong=0;
     static int flag1=0;
+    private MyAdManager adManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setupEdgeToEdge();
+
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_py_quiz_1);
+        setContentView(R.layout.activity_py_quiz);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         setTitle("Quiz 1");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        mAdview = findViewById(R.id.adView);
-        adRequest = new AdRequest.Builder().build();
-        mAdview.loadAd(adRequest);
+        RelativeLayout rootLayout = findViewById(R.id.quiz_main);
+        AppBarLayout appBarLayout = findViewById(R.id.appBar);
 
-        AdLoader adLoader = new AdLoader.Builder(this, getResources().getString(R.string.PY_native))
-                .forNativeAd(new NativeAd.OnNativeAdLoadedListener() {
-                    private ColorDrawable background;@Override
-                    public void onNativeAdLoaded(NativeAd nativeAd) {
-                        NativeTemplateStyle styles = new
-                                NativeTemplateStyle.Builder().withMainBackgroundColor(background).build();
-                        TemplateView template = findViewById(R.id.my_template);
-                        template.setStyles(styles);
-                        template.setNativeAd(nativeAd);
-                    }
-                })
-                .build();
-        adLoader.loadAd(adRequest);
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(systemBars.left,0,systemBars.right, systemBars.bottom);
+
+            Insets appbarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+            appBarLayout.setPadding(0,appbarInsets.top,0,0);
+
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        mAdview = (AdView) findViewById(R.id.adView);
+
+        adManager = new MyAdManager(this);
+        loadBannerAd();
+
+        if (!adManager.hasPurchasedRemoveAds()) {
+            int paddingInDp = 50;
+            int paddingInPx = dpToPx(this, paddingInDp);
+            ScrollView sc = (ScrollView) findViewById(R.id.scrollView);
+            sc.setPadding(0,0,0,paddingInPx);
+        }else{
+            int paddingInDp = 7;
+            int paddingInPx = dpToPx(this, paddingInDp);
+            ScrollView sc = (ScrollView) findViewById(R.id.scrollView);
+            sc.setPadding(0,0,0,paddingInPx);
+        }
+
+        TemplateView template = findViewById(R.id.my_template);
+        if (!adManager.hasPurchasedRemoveAds()) {
+            AdLoader adLoader = new AdLoader.Builder(this, getResources().getString(R.string.PY_native))
+                    .forNativeAd(new NativeAd.OnNativeAdLoadedListener() {
+                        private ColorDrawable background;@Override
+                        public void onNativeAdLoaded(NativeAd nativeAd) {
+                            NativeTemplateStyle styles = new
+                                    NativeTemplateStyle.Builder().withMainBackgroundColor(background).build();
+                            template.setStyles(styles);
+                            template.setNativeAd(nativeAd);
+                            template.setVisibility(View.VISIBLE);
+                        }
+                    })
+                    .build();
+            adLoader.loadAd(adRequest);
+        }else{
+            template.setVisibility(View.GONE);
+        }
 
         vibe=(Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
@@ -340,5 +383,50 @@ public class py_quiz_1 extends AppCompatActivity {
         });
 
         dialog.show();
+    }
+    private void loadBannerAd() {
+        if (!adManager.hasPurchasedRemoveAds()) {
+            // Ads are enabled, load the banner ad
+            adRequest=new AdRequest.Builder().build();
+            mAdview.loadAd(adRequest);
+            mAdview.setVisibility(View.VISIBLE);
+        } else {
+            // Ads are disabled, hide the banner ad
+            mAdview.setVisibility(View.GONE);
+        }
+    }
+    public int dpToPx(Context context, int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+    private void setupEdgeToEdge() {
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightNavigationBars(false);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(false);
+        Window window = getWindow();
+
+        // Set status bar color as per theme
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.setStatusBarColor(getColor(R.color.colorPrimaryDark));
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Prevent Android from forcing white nav background for 3-button navigation
+            window.setNavigationBarContrastEnforced(false);
+
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                // Adjust navigation bar icons (light/dark) based on your theme
+                controller.setSystemBarsAppearance(
+                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                );
+            }
+        } else {
+            // For Android 10 and below → ensure nav bar is edge-to-edge
+            window.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            );
+        }
     }
 }

@@ -2,17 +2,29 @@ package com.meet.learnpython;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
+import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowInsetsController;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+
 import com.google.android.ads.nativetemplates.NativeTemplateStyle;
 import com.google.android.ads.nativetemplates.TemplateView;
 import com.google.android.gms.ads.AdLoader;
@@ -22,6 +34,7 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.material.appbar.AppBarLayout;
 
 
 import java.util.concurrent.Executors;
@@ -34,12 +47,32 @@ public class PY_1 extends AppCompatActivity {
     AdRequest adRequest;
     String str1,str2,str3;
     private InterstitialAd mInterstitialAd;
+    private MyAdManager adManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setupEdgeToEdge();
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_p_y_1);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         setTitle(getIntent().getExtras().getString("key1"));
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        RelativeLayout rootLayout = findViewById(R.id.py_main);
+        AppBarLayout appBarLayout = findViewById(R.id.appBar);
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(systemBars.left,0,systemBars.right, systemBars.bottom);
+
+            Insets appbarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+            appBarLayout.setPadding(0,appbarInsets.top,0,0);
+
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         String str = getIntent().getExtras().getString("key");
         if(str.equals("0")){
@@ -242,58 +275,86 @@ public class PY_1 extends AppCompatActivity {
         });
         webView1.setLongClickable(false);
 
-        mAdview = (AdView)findViewById(R.id.adView);
-        adRequest=new AdRequest.Builder().build();
-        mAdview.loadAd(adRequest);
+        mAdview = (AdView) findViewById(R.id.adView);
 
-        AdLoader adLoader = new AdLoader.Builder(this, getResources().getString(R.string.PY_native))
-                .forNativeAd(new NativeAd.OnNativeAdLoadedListener() {
-                    private ColorDrawable background;@Override
-                    public void onNativeAdLoaded(NativeAd nativeAd) {
-                        NativeTemplateStyle styles = new
-                                NativeTemplateStyle.Builder().withMainBackgroundColor(background).build();
-                        TemplateView template = findViewById(R.id.my_template);
-                        template.setStyles(styles);
-                        template.setNativeAd(nativeAd);
-                    }
-                })
-                .build();
-        adLoader.loadAd(adRequest);
+        adManager = new MyAdManager(this);
+        loadBannerAd();
 
-        AdLoader adLoader1 = new AdLoader.Builder(this, getResources().getString(R.string.PY_native1))
-                .forNativeAd(new NativeAd.OnNativeAdLoadedListener() {
-                    private ColorDrawable background;@Override
-                    public void onNativeAdLoaded(NativeAd nativeAd) {
-                        NativeTemplateStyle styles = new
-                                NativeTemplateStyle.Builder().withMainBackgroundColor(background).build();
-                        TemplateView template = findViewById(R.id.my_template1);
-                        template.setStyles(styles);
-                        template.setNativeAd(nativeAd);
-                    }
-                })
-                .build();
-        adLoader1.loadAd(adRequest);
+        if (!adManager.hasPurchasedRemoveAds()) {
+            int paddingInDp = 50;
+            int paddingInPx = dpToPx(this, paddingInDp);
+            ScrollView sc = (ScrollView) findViewById(R.id.scrollView);
+            sc.setPadding(0,0,0,paddingInPx);
+        }else{
+            int paddingInDp = 7;
+            int paddingInPx = dpToPx(this, paddingInDp);
+            ScrollView sc = (ScrollView) findViewById(R.id.scrollView);
+            sc.setPadding(0,0,0,paddingInPx);
+        }
 
-        showAd();
+        TemplateView template = findViewById(R.id.my_template);
+        TemplateView template1 = findViewById(R.id.my_template1);
 
-        ScheduledExecutorService scheduler =
-                Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleWithFixedDelay(new Runnable() {
+        if (!adManager.hasPurchasedRemoveAds()) {
+            AdLoader adLoader = new AdLoader.Builder(this, getResources().getString(R.string.PY_native))
+                    .forNativeAd(new NativeAd.OnNativeAdLoadedListener() {
+                        private ColorDrawable background;
 
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                        if(flag==0) {
-                            if (mInterstitialAd!= null) {
-                                mInterstitialAd.show(PY_1.this);
-                            }
-                            showAd();
+                        @Override
+                        public void onNativeAdLoaded(NativeAd nativeAd) {
+                            NativeTemplateStyle styles = new
+                                    NativeTemplateStyle.Builder().withMainBackgroundColor(background).build();
+                            template.setStyles(styles);
+                            template.setNativeAd(nativeAd);
+                            template.setVisibility(View.VISIBLE);
                         }
-                    }
-                });
+                    })
+                    .build();
+            adLoader.loadAd(adRequest);
 
-            }
-        }, 150, 150, TimeUnit.SECONDS);
+            AdLoader adLoader1 = new AdLoader.Builder(this, getResources().getString(R.string.PY_native1))
+                    .forNativeAd(new NativeAd.OnNativeAdLoadedListener() {
+                        private ColorDrawable background;
+
+                        @Override
+                        public void onNativeAdLoaded(NativeAd nativeAd) {
+                            NativeTemplateStyle styles = new
+                                    NativeTemplateStyle.Builder().withMainBackgroundColor(background).build();
+                            template1.setStyles(styles);
+                            template1.setNativeAd(nativeAd);
+                            template1.setVisibility(View.VISIBLE);
+                        }
+                    })
+                    .build();
+            adLoader1.loadAd(adRequest);
+        }
+        else{
+            template.setVisibility(View.GONE);
+            template1.setVisibility(View.GONE);
+        }
+
+        if (!adManager.hasPurchasedRemoveAds()) {
+            showAd();
+
+            ScheduledExecutorService scheduler =
+                    Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleWithFixedDelay(new Runnable() {
+
+                public void run() {
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            if (flag == 0) {
+                                if (mInterstitialAd != null) {
+                                    mInterstitialAd.show(PY_1.this);
+                                }
+                                showAd();
+                            }
+                        }
+                    });
+
+                }
+            }, 150, 150, TimeUnit.SECONDS);
+        }
 
     }
     public void showAd(){
@@ -341,5 +402,50 @@ public class PY_1 extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         flag=1;
+    }
+    private void loadBannerAd() {
+        if (!adManager.hasPurchasedRemoveAds()) {
+            // Ads are enabled, load the banner ad
+            adRequest=new AdRequest.Builder().build();
+            mAdview.loadAd(adRequest);
+            mAdview.setVisibility(View.VISIBLE);
+        } else {
+            // Ads are disabled, hide the banner ad
+            mAdview.setVisibility(View.GONE);
+        }
+    }
+    public int dpToPx(Context context, int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+    private void setupEdgeToEdge() {
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightNavigationBars(false);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(false);
+        Window window = getWindow();
+
+        // Set status bar color as per theme
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.setStatusBarColor(getColor(R.color.colorPrimaryDark));
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Prevent Android from forcing white nav background for 3-button navigation
+            window.setNavigationBarContrastEnforced(false);
+
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                // Adjust navigation bar icons (light/dark) based on your theme
+                controller.setSystemBarsAppearance(
+                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
+                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                );
+            }
+        } else {
+            // For Android 10 and below → ensure nav bar is edge-to-edge
+            window.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            );
+        }
     }
 }
